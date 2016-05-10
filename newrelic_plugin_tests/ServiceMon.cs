@@ -48,15 +48,6 @@ namespace newrelic_plugin_tests
             return RunningServiceList;
         }
 
-
-        [TestMethod]
-        public void IsRunningTest()
-        {
-            var svcList = GetServicesByState(services, ServiceControllerStatus.Running);
-            foreach(string checkSvc in Properties.Settings.Default.ShouldBeRunning)
-                Assert.IsTrue(svcList.ContainsKey(checkSvc.ToLower()), "{0} is not running", checkSvc);
-        }
-
         [TestMethod]
         public void BuildConfig()
         {
@@ -83,29 +74,10 @@ namespace newrelic_plugin_tests
             Console.Write(json);
         }
 
-        [TestMethod]
-        public void RunService()
-        {
-            newrelic_servicemon_plugin.PluginConfig pc = new newrelic_servicemon_plugin.PluginConfig();
-            pc.agents.Add(new newrelic_servicemon_plugin.PluginConfig.Agent
-            {
-                name = Environment.MachineName,
-                servicelist = new List<newrelic_servicemon_plugin.PluginConfig.ServiceMon>
-                  {
-                      new newrelic_servicemon_plugin.PluginConfig.ServiceMon
-                      {
-                           servicename = "aspnet_state",
-                           displayname = "ASP.net State Service"
-                      },
-                      new newrelic_servicemon_plugin.PluginConfig.ServiceMon
-                      {
-                          servicename = "timebroker",
-                          displayname = "Time Broker"
-                      }
-                  }
-            });
-            newrelic_servicemon_plugin.ServiceMonAgent agent = new newrelic_servicemon_plugin.ServiceMonAgent(pc.agents[0].name, pc.agents[0].servicelist);
-            agent.PollCycle();
-        }
+        //[TestMethod]
+        //public void RunService()
+        //{
+        //    Run service by changing newrelic_servicemon_plugin to console application
+        //}
     }
 }

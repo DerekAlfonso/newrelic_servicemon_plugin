@@ -11,21 +11,29 @@ namespace newrelic_servicemon_plugin
         public const string ServiceName = "newrelic_servicemon_plugin";
         static void Main(string[] args)
         {
-            HostFactory.Run(x =>
+            if (Environment.UserInteractive)
             {
-                x.Service<PluginService>(sc =>
+                PluginService svc = new PluginService();
+                svc.Start();
+            }
+            else
+            {
+                HostFactory.Run(x =>
                 {
-                    sc.ConstructUsing(() => new PluginService());
+                    x.Service<PluginService>(sc =>
+                    {
+                        sc.ConstructUsing(() => new PluginService());
 
-                    sc.WhenStarted(s => s.Start());
-                    sc.WhenStopped(s => s.Stop());
+                        sc.WhenStarted(s => s.Start());
+                        sc.WhenStopped(s => s.Stop());
+                    });
+                    x.SetServiceName(ServiceName);
+                    x.SetDisplayName("NewRelic Windows Service Monitor Plugin");
+                    x.SetDescription("Sends Details to NewRelic About Running Services");
+                    x.StartAutomatically();
+                    x.RunAsPrompt();
                 });
-                x.SetServiceName(ServiceName);
-                x.SetDisplayName("NewRelic Windows Service Monitor Plugin");
-                x.SetDescription("Sends Details to NewRelic About Running Services");
-                x.StartAutomatically();
-                x.RunAsPrompt();
-            });
+            }
         }
     }
 
@@ -39,7 +47,7 @@ namespace newrelic_servicemon_plugin
         public PluginService()
         {
             _runner = new Runner();
-            _runner.Add(new PerfmonAgentFactory());
+            _runner.Add(new ServiceMonAgentFactory());
         }
 
         public void Start()

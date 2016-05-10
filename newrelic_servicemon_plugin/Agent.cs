@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using NewRelic.Platform.Sdk;
 using NewRelic.Platform.Sdk.Utils;
-using System.Management;
 using System.Configuration;
 using System.ServiceProcess;
 using System.Linq;
@@ -38,10 +37,25 @@ namespace newrelic_servicemon_plugin
 
         private static Logger logger = Logger.GetLogger(Program.ServiceName);
 
-        public ServiceMonAgent(string name, List<PluginConfig.ServiceMon> services)
+        public ServiceMonAgent(string name, List<Object> services)
         {
             Name = name;
-            ServicesShouldBeRunning = services;
+            ServicesShouldBeRunning = ConvertFromObjectList(services);
+        }
+
+        private List<PluginConfig.ServiceMon> ConvertFromObjectList(List<Object> input)
+        {
+            List<PluginConfig.ServiceMon> ret = new List<PluginConfig.ServiceMon>();
+            foreach(object item in input)
+            {
+
+                if(item is Dictionary<string,object>)
+                {
+                    Dictionary<string, object> ti = (Dictionary<string, object>)item;
+                    ret.Add(new PluginConfig.ServiceMon { servicename = (string)ti["servicename"], displayname = (string)ti["displayname"] });
+                }
+            }
+            return ret;
         }
 
         public override string GetAgentName()
@@ -87,12 +101,12 @@ namespace newrelic_servicemon_plugin
         }
     }
 
-    class PerfmonAgentFactory : AgentFactory
+    class ServiceMonAgentFactory : AgentFactory
     {
         public override Agent CreateAgentWithConfiguration(IDictionary<string, object> properties)
         {
             string name = (string)properties["name"];
-            List<PluginConfig.ServiceMon> servicelist = (List<PluginConfig.ServiceMon>)properties["servicelist"];
+            List<Object> servicelist = (List<Object>)properties["servicelist"];
 
             if (servicelist.Count == 0)
                 throw new Exception("'servicelist' is empty. Do you have a 'config/plugin.json' file?");
