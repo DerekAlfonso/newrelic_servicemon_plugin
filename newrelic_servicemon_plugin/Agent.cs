@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using NewRelic.Platform.Sdk;
 using NewRelic.Platform.Sdk.Utils;
+//using NewRelic.Api.Agent;
 using System.Configuration;
 using System.ServiceProcess;
 using System.Linq;
@@ -19,7 +20,7 @@ namespace newrelic_servicemon_plugin
                     if (!string.IsNullOrEmpty(ConfigurationManager.AppSettings["guid"].ToString()))
                         return ConfigurationManager.AppSettings["guid"].ToString();
                 }
-                return "com.automatedops" + Program.ServiceName;
+                return "com.DerekAlfonso." + Program.ServiceName;
             }
         }
         
@@ -35,7 +36,7 @@ namespace newrelic_servicemon_plugin
         private string Name { get; set; }
         private List<PluginConfig.ServiceMon> ServicesShouldBeRunning { get; set; }
 
-        private static Logger logger = Logger.GetLogger(Program.ServiceName);
+        private static Logger logger = Logger.GetLogger("ServiceMonAgent");
 
         public ServiceMonAgent(string name, List<Object> services)
         {
@@ -63,21 +64,54 @@ namespace newrelic_servicemon_plugin
             return Name;
         }
 
+        private int CountState(ServiceController[] svcGet, ServiceControllerStatus status, ref int RunningTotal)
+        {
+            var ret = GetServicesByState(svcGet, status).Count;
+            RunningTotal += ret;
+            return ret;
+        }
+
         public override void PollCycle()
         {
             try
             {
-                var runningSvcs = GetServicesByState(ServiceController.GetServices(), ServiceControllerStatus.Running);
+                Dictionary<string, Object> servicesNotRunning = new Dictionary<string, object>();
+
+                var svcGet = ServiceController.GetServices();
+                var runningSvcs = GetServicesByState(svcGet, ServiceControllerStatus.Running);
+                ReportMetric("Total/Running", "services", runningSvcs.Count);
+                int tsc = runningSvcs.Count;
+                ReportMetric("Total/Stopped", "services", CountState(svcGet, ServiceControllerStatus.Stopped, ref tsc));
+                ReportMetric("Total/Starting", "services", CountState(svcGet, ServiceControllerStatus.StartPending, ref tsc));
+                ReportMetric("Total/Stopping", "services", CountState(svcGet, ServiceControllerStatus.StopPending, ref tsc));
+                ReportMetric("Total/Paused", "services", CountState(svcGet, ServiceControllerStatus.Paused, ref tsc));
+                ReportMetric("Total/Pausing", "services", CountState(svcGet, ServiceControllerStatus.PausePending, ref tsc));
+                ReportMetric("Total/Continue Pending", "services", CountState(svcGet, ServiceControllerStatus.ContinuePending, ref tsc));
+                ReportMetric("Total/Service Count", "services", tsc);
+                int IsRunning = 0;
                 foreach(PluginConfig.ServiceMon svc in ServicesShouldBeRunning)
                 {
                     if (!runningSvcs.ContainsKey(svc.servicename.ToLower()))
                     {
                         logger.Error("{0} ({1}) is not running on {2}", svc.displayname, svc.servicename, Name);
-                        ReportMetric(svc.displayname, "running", 0);
+                        ReportMetric("Service/" + svc.displayname, "isRunning", 0);
+                        servicesNotRunning.Add(svc.servicename, svc.displayname);
                     }
                     else
-                        ReportMetric(svc.displayname, "running", 1);
+                    {
+                        ReportMetric("Service/" + svc.displayname, "isRunning", 1);
+                        IsRunning++;
+                    }
                 }
+                //if(servicesNotRunning.Count>0)
+                    //NewRelic.Api.Agent.NewRelic.RecordCustomEvent("Required Services Not Running", servicesNotRunning);
+
+                ReportMetric("Required/Count/Running", "services", IsRunning);
+                ReportMetric("Required/Count/Not Running", "services", servicesNotRunning.Count);
+                ReportMetric("Required/Count/Total", "services", ServicesShouldBeRunning.Count);
+
+                ReportPercentage("Required/Prct/Not Running", servicesNotRunning.Count, ServicesShouldBeRunning.Count);
+                ReportPercentage("Required/Prct/Running", IsRunning, ServicesShouldBeRunning.Count);
             }
             catch (Exception e)
             {
@@ -85,6 +119,13 @@ namespace newrelic_servicemon_plugin
             }
         }
 
+        private void ReportPercentage(string Name, float Numerator, float Denominator)
+        {
+            if (Denominator > 0)
+                ReportMetric(Name, "%", (Numerator / Denominator) * 100);
+            else
+                ReportMetric(Name, "%", 0);
+        }
         private static Dictionary<string, string> GetServicesByState(ServiceController[] services, ServiceControllerStatus stateToGet)
         {
             Dictionary<string, string> RunningServiceList = new Dictionary<string, string>();

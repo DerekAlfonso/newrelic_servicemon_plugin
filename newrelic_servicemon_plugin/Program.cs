@@ -8,11 +8,12 @@ namespace newrelic_servicemon_plugin
 {
     class Program
     {
-        public const string ServiceName = "newrelic_servicemon_plugin";
+        public const string ServiceName = "NewRelic_ServiceMon_Plugin";
         static void Main(string[] args)
         {
             if (Environment.UserInteractive)
             {
+                Console.Title = ServiceName;
                 PluginService svc = new PluginService();
                 svc.Start();
             }
@@ -42,7 +43,7 @@ namespace newrelic_servicemon_plugin
         Runner _runner;
         public Thread thread { get; set; }
 
-        private static Logger logger = Logger.GetLogger(Program.ServiceName);
+        private static Logger logger = Logger.GetLogger("PluginService");
 
         public PluginService()
         {

@@ -2,15 +2,15 @@
   "agents": 
   [
     {
-      "name": "STUDIO",
+      "name": "dereklocalvm",
       "servicelist": [
         {
-          "servicename": "aspnet_state",
-          "displayname": "ASP.net State Service"
+          "servicename": "IKEEXT",
+          "displayname": "IKE Service"
         },
         {
-          "servicename": "timebroker",
-          "displayname": "Time Broker"
+          "servicename": "AeLookupSvc",
+          "displayname": "Application Experience"
         }
       ]
     }
