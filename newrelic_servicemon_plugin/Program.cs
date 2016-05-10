@@ -2,13 +2,13 @@
 using NewRelic.Platform.Sdk;
 using NewRelic.Platform.Sdk.Utils;
 using Topshelf;
-using Topshelf.Runtime;
 using System.Threading;
 
-namespace newrelic_perfmon_plugin
+namespace newrelic_servicemon_plugin
 {
     class Program
     {
+        public const string ServiceName = "newrelic_servicemon_plugin";
         static void Main(string[] args)
         {
             HostFactory.Run(x =>
@@ -20,9 +20,9 @@ namespace newrelic_perfmon_plugin
                     sc.WhenStarted(s => s.Start());
                     sc.WhenStopped(s => s.Stop());
                 });
-                x.SetServiceName("newrelic_perfmon_plugin");
-                x.SetDisplayName("NewRelic Windows Perfmon Plugin");
-                x.SetDescription("Sends Perfmon Metrics to NewRelic Platform");
+                x.SetServiceName(ServiceName);
+                x.SetDisplayName("NewRelic Windows Service Monitor Plugin");
+                x.SetDescription("Sends Details to NewRelic About Running Services");
                 x.StartAutomatically();
                 x.RunAsPrompt();
             });
@@ -34,7 +34,7 @@ namespace newrelic_perfmon_plugin
         Runner _runner;
         public Thread thread { get; set; }
 
-        private static Logger logger = Logger.GetLogger("newrelic_perfmon_plugin");
+        private static Logger logger = Logger.GetLogger(Program.ServiceName);
 
         public PluginService()
         {
