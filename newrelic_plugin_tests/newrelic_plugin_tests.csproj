@@ -74,7 +74,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\newrelic_perfmon_plugin\newrelic_servicemon_plugin.csproj">
+    <ProjectReference Include="..\newrelic_servicemon_plugin\newrelic_servicemon_plugin.csproj">
       <Project>{c8408dd7-ff5c-4fb5-902b-b4b4dbcf3b20}</Project>
       <Name>newrelic_servicemon_plugin</Name>
     </ProjectReference>
