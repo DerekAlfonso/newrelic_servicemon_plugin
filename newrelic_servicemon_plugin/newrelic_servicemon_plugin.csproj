@@ -114,6 +114,7 @@
     <None Include="config\newrelic.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="config\newrelic.template..json" />
     <None Include="config\plugin.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
