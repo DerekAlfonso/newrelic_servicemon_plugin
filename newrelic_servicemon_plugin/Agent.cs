@@ -5,10 +5,11 @@ using NewRelic.Platform.Sdk.Utils;
 using System.Management;
 using System.Configuration;
 using System.ServiceProcess;
+using System.Linq;
 
 namespace newrelic_servicemon_plugin
 {
-    class ServiceMonAgent : Agent
+    public class ServiceMonAgent : Agent
     {
         public override string Guid
         {
@@ -33,14 +34,14 @@ namespace newrelic_servicemon_plugin
         }
 
         private string Name { get; set; }
-        private List<PluginConfig.ServiceMon> Counters { get; set; }
+        private List<PluginConfig.ServiceMon> ServicesShouldBeRunning { get; set; }
 
         private static Logger logger = Logger.GetLogger(Program.ServiceName);
 
         public ServiceMonAgent(string name, List<PluginConfig.ServiceMon> services)
         {
             Name = name;
-            Counters = services;
+            ServicesShouldBeRunning = services;
         }
 
         public override string GetAgentName()
@@ -52,13 +53,37 @@ namespace newrelic_servicemon_plugin
         {
             try
             {
-                ServiceController sc = new ServiceController();
-
-            }    
+                var runningSvcs = GetServicesByState(ServiceController.GetServices(), ServiceControllerStatus.Running);
+                foreach(PluginConfig.ServiceMon svc in ServicesShouldBeRunning)
+                {
+                    if (!runningSvcs.ContainsKey(svc.servicename.ToLower()))
+                    {
+                        logger.Error("{0} ({1}) is not running on {2}", svc.displayname, svc.servicename, Name);
+                        ReportMetric(svc.displayname, "running", 0);
+                    }
+                    else
+                        ReportMetric(svc.displayname, "running", 1);
+                }
+            }
             catch (Exception e)
             {
-                logger.Error("Unable to connect to \"{0}\". {1}", Name, e.Message);
+                logger.Fatal("Unable to connect to \"{0}\". {1}", Name, e.Message);
             }
+        }
+
+        private static Dictionary<string, string> GetServicesByState(ServiceController[] services, ServiceControllerStatus stateToGet)
+        {
+            Dictionary<string, string> RunningServiceList = new Dictionary<string, string>();
+            foreach (ServiceController svc in services.Where(x => x.Status == stateToGet))
+                RunningServiceList.Add(svc.ServiceName.ToLower(), svc.DisplayName);
+            return RunningServiceList;
+        }
+        private static Dictionary<string, string> GetServicesByNotState(ServiceController[] services, ServiceControllerStatus stateToNotGet)
+        {
+            Dictionary<string, string> RunningServiceList = new Dictionary<string, string>();
+            foreach (ServiceController svc in services.Where(x => x.Status != stateToNotGet))
+                RunningServiceList.Add(svc.ServiceName.ToLower(), svc.DisplayName);
+            return RunningServiceList;
         }
     }
 

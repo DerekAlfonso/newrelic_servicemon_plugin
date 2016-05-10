@@ -79,7 +79,33 @@ namespace newrelic_plugin_tests
                   }
             });
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(pc, Newtonsoft.Json.Formatting.Indented);
+            System.IO.File.WriteAllText("config/plugin.json", json);
             Console.Write(json);
+        }
+
+        [TestMethod]
+        public void RunService()
+        {
+            newrelic_servicemon_plugin.PluginConfig pc = new newrelic_servicemon_plugin.PluginConfig();
+            pc.agents.Add(new newrelic_servicemon_plugin.PluginConfig.Agent
+            {
+                name = Environment.MachineName,
+                servicelist = new List<newrelic_servicemon_plugin.PluginConfig.ServiceMon>
+                  {
+                      new newrelic_servicemon_plugin.PluginConfig.ServiceMon
+                      {
+                           servicename = "aspnet_state",
+                           displayname = "ASP.net State Service"
+                      },
+                      new newrelic_servicemon_plugin.PluginConfig.ServiceMon
+                      {
+                          servicename = "timebroker",
+                          displayname = "Time Broker"
+                      }
+                  }
+            });
+            newrelic_servicemon_plugin.ServiceMonAgent agent = new newrelic_servicemon_plugin.ServiceMonAgent(pc.agents[0].name, pc.agents[0].servicelist);
+            agent.PollCycle();
         }
     }
 }
